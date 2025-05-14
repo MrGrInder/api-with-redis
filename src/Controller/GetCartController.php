@@ -29,8 +29,7 @@ readonly class GetCartController
     public function get(RequestInterface $request): ResponseInterface
     {
         $response = new JsonResponse();
-        $cartUuid = $request->getQueryParams()['cart_uuid'] ?? '';
-        $cart = $this->cartManager->getCart($cartUuid);
+        $cart = $this->cartManager->getCart($request->getQueryParams()['cart_uuid']);
 
         if (!$cart) {
             $response->getBody()->write(

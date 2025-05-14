@@ -49,11 +49,7 @@ readonly class CartView
         $total = 0;
         $data['items'] = [];
         foreach ($cart->getItems() as $item) {
-            $product = $productMap[$item->getProductUuid()] ?? [];
-            if (empty($product)) {
-                continue;
-            }
-
+            $product = $productMap[$item->getProductUuid()];
             $itemTotal = $item->getPrice() * $item->getQuantity();
             $total += $itemTotal;
 

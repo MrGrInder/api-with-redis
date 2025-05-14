@@ -52,10 +52,6 @@ class ProductRepository
      */
     public function getByCategory(string $category): array
     {
-        if (empty($category)) {
-            return [];
-        }
-
         $products = $this->connection->fetchAllAssociative(
             "SELECT * FROM products WHERE is_active = 1 AND category = :category",
             ['category' => $category]

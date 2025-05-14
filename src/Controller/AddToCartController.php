@@ -41,14 +41,10 @@ readonly class AddToCartController
         try {
             $rawRequest = json_decode($request->getBody()->getContents(), true);
             $product = $this->productRepository->getByUuid($rawRequest['productUuid']);
-            $cartUuid = $rawRequest['cart_uuid'] ?? null;
+            $cartUuid = $rawRequest['cart_uuid'];
 
-            if ($cartUuid) {
-                $cart = $this->cartManager->getCart($cartUuid);
-                if (!$cart) {
-                    return new JsonResponse(['error' => 'Cart not found'], 404);
-                }
-            } else {
+            $cart = $this->cartManager->getCart($cartUuid);
+            if (!$cart) {
                 $cart = $this->cartManager->createCart();
                 $this->logger->info('New cart created', ['uuid' => $cart->getUuid()]);
             }

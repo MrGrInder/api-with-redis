@@ -25,7 +25,7 @@ readonly class GetProductsController
     public function get(RequestInterface $request): ResponseInterface
     {
         $response = new JsonResponse();
-        $category = $request->getQueryParams()['category'] ?? '';
+        $category = $request->getQueryParams()['category'];
 
         $response->getBody()->write(
             json_encode(
