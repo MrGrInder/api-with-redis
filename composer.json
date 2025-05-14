@@ -1,11 +1,16 @@
 {
-  "name": "raketa/backend-test-task",
-  "description": "description",
-  "minimum-stability": "stable",
-  "license": "proprietary",
+  "name": "mrgrinder/api-with-redis",
+  "version": "1.0.0",
+  "description": "Api with Redis",
+  "authors": [
+    {
+      "name": "Tsarev Alexander",
+      "email": "mr.grinder73@gmail.com"
+    }
+  ],
   "autoload": {
     "psr-4": {
-      "Raketa\\BackendTestTask\\": "src/"
+      "App": "src/"
     }
   },
   "require": {

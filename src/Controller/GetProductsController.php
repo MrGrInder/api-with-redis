@@ -2,28 +2,34 @@
 
 declare(strict_types = 1);
 
-namespace Raketa\BackendTestTask\Controller;
+namespace App\Controller;
 
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Raketa\BackendTestTask\View\ProductsView;
+use App\View\ProductsView;
 
 readonly class GetProductsController
 {
+    /**
+     * @param ProductsView $productsVew
+     */
     public function __construct(
         private ProductsView $productsVew
     ) {
     }
 
+    /**
+     * @param RequestInterface $request
+     * @return ResponseInterface
+     */
     public function get(RequestInterface $request): ResponseInterface
     {
         $response = new JsonResponse();
-
-        $rawRequest = json_decode($request->getBody()->getContents(), true);
+        $category = $request->getQueryParams()['category'] ?? '';
 
         $response->getBody()->write(
             json_encode(
-                $this->productsVew->toArray($rawRequest['category']),
+                $this->productsVew->toArray($category),
                 JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
             )
         );

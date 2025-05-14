@@ -2,51 +2,71 @@
 
 declare(strict_types = 1);
 
-namespace Raketa\BackendTestTask\Repository;
+namespace App\Repository;
 
-use Exception;
+use App\Exception\CartException;
+use App\Infrastructure\ConnectorException;
 use Psr\Log\LoggerInterface;
-use Raketa\BackendTestTask\Domain\Cart;
-use Raketa\BackendTestTask\Infrastructure\ConnectorFacade;
+use App\Domain\Cart;
+use App\Infrastructure\ConnectorFacade;
 
-class CartManager extends ConnectorFacade
+readonly class CartManager
 {
-    public $logger;
-
-    public function __construct($host, $port, $password)
-    {
-        parent::__construct($host, $port, $password, 1);
-        parent::build();
-    }
-
-    public function setLogger(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
+    /**
+     * @param ConnectorFacade $connectorFacade
+     * @param LoggerInterface $logger
+     */
+    public function __construct(
+        private ConnectorFacade $connectorFacade,
+        private LoggerInterface $logger
+    ) {
     }
 
     /**
-     * @inheritdoc
+     * @return Cart
      */
-    public function saveCart(Cart $cart)
+    public function createCart(): Cart
+    {
+        $cart = Cart::createDefault();
+        $this->saveCart($cart);
+        $this->logger->info('New cart created', ['uuid' => $cart->getUuid()]);
+
+        return $cart;
+    }
+
+    /**
+     * @param Cart $cart
+     * @return void
+     */
+    public function saveCart(Cart $cart): void
     {
         try {
-            $this->connector->set($cart, session_id());
-        } catch (Exception $e) {
-            $this->logger->error('Error');
+            $this->connectorFacade->getConnector()->set($cart->getUuid(), $cart);
+        } catch (ConnectorException $exception) {
+            $this->logger->error('Error saving cart: ' . $exception->getMessage(), [
+                'uuid' => $cart->getUuid(),
+                'error' => $exception->getMessage(),
+                'exception' => $exception,
+            ]);
+            throw new CartException('Failed to save cart');
         }
     }
 
     /**
-     * @return ?Cart
+     * @param string $cartUuid
+     * @return Cart|null
      */
-    public function getCart()
+    public function getCart(string $cartUuid): ?Cart
     {
         try {
-            return $this->connector->get(session_id());
-        } catch (Exception $e) {
-            $this->logger->error('Error');
+            return $this->connectorFacade->getConnector()->get($cartUuid);
+        } catch (ConnectorException $exception) {
+            $this->logger->error('Error retrieving cart: ' . $exception->getMessage(), [
+                'uuid' => $cartUuid,
+                'error' => $exception->getMessage(),
+                'exception' => $exception,
+            ]);
+            return null;
         }
-
-        return new Cart(session_id(), []);
     }
 }

@@ -1,85 +1,214 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
-namespace Raketa\BackendTestTask\Controller;
+namespace App\Controller;
 
-use Psr\Http\Message\MessageInterface;
-use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\ResponseInterface;
 
-/**
- * Класс заглушка
- */
 final class JsonResponse implements ResponseInterface
 {
+    private string $protocolVersion = '1.1';
+    private int $statusCode;
+    private string $reasonPhrase;
+    private array $headers;
+    private StreamInterface $body;
+
+    /**
+     * @param $data
+     * @param int $status
+     * @param array $headers
+     */
+    public function __construct(
+        $data = null,
+        int $status = 200,
+        array $headers = []
+    ) {
+        $this->statusCode = $status;
+        $this->body = $this->createBody($data);
+        $this->headers = array_merge(['Content-Type' => 'application/json'], $headers);
+    }
+
+    /**
+     * @param $data
+     * @return StreamInterface
+     * @throws \JsonException
+     */
+    private function createBody($data): StreamInterface
+    {
+        $body = new class implements StreamInterface {
+            private string $content = '';
+
+            public function __toString(): string
+            {
+                return $this->content;
+            }
+
+            public function close(): void {}
+            public function detach() { return null; }
+            public function getSize(): ?int { return strlen($this->content); }
+            public function tell(): int { return 0; }
+            public function eof(): bool { return true; }
+            public function isSeekable(): bool { return false; }
+            public function seek(int $offset, int $whence = SEEK_SET): void {}
+            public function rewind(): void {}
+            public function isWritable(): bool { return true; }
+            public function write(string $string): int
+            {
+                $this->content .= $string;
+                return strlen($string);
+            }
+            public function isReadable(): bool { return false; }
+            public function read(int $length): string { return ''; }
+            public function getContents(): string { return $this->content; }
+            public function getMetadata(?string $key = null) { return null; }
+        };
+
+        if ($data !== null) {
+            $json = json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+            $body->write($json);
+        }
+
+        return $body;
+    }
+
+    /**
+     * @return string
+     */
     public function getProtocolVersion(): string
     {
-        // TODO: Implement getProtocolVersion() method.
+        return $this->protocolVersion;
     }
 
-    public function withProtocolVersion(string $version): MessageInterface
+    /**
+     * @param $version
+     * @return $this
+     */
+    public function withProtocolVersion($version): self
     {
-        // TODO: Implement withProtocolVersion() method.
+        $new = clone $this;
+        $new->protocolVersion = $version;
+        return $new;
     }
 
+    /**
+     * @return array|\string[][]
+     */
     public function getHeaders(): array
     {
-        // TODO: Implement getHeaders() method.
+        return $this->headers;
     }
 
-    public function hasHeader(string $name): bool
+    /**
+     * @param $name
+     * @return bool
+     */
+    public function hasHeader($name): bool
     {
-        // TODO: Implement hasHeader() method.
+        return isset($this->headers[strtolower($name)]);
     }
 
-    public function getHeader(string $name): array
+    /**
+     * @param $name
+     * @return array|string[]
+     */
+    public function getHeader($name): array
     {
-        // TODO: Implement getHeader() method.
+        $name = strtolower($name);
+        return $this->headers[$name] ?? [];
     }
 
-    public function getHeaderLine(string $name): string
+    /**
+     * @param $name
+     * @return string
+     */
+    public function getHeaderLine($name): string
     {
-        // TODO: Implement getHeaderLine() method.
+        return implode(', ', $this->getHeader($name));
     }
 
-    public function withHeader(string $name, $value): MessageInterface
+    /**
+     * @param $name
+     * @param $value
+     * @return $this
+     */
+    public function withHeader($name, $value): self
     {
-        // TODO: Implement withHeader() method.
+        $new = clone $this;
+        $new->headers[strtolower($name)] = (array)$value;
+        return $new;
     }
 
-    public function withAddedHeader(string $name, $value): MessageInterface
+    /**
+     * @param $name
+     * @param $value
+     * @return $this
+     */
+    public function withAddedHeader($name, $value): self
     {
-        // TODO: Implement withAddedHeader() method.
+        $new = clone $this;
+        $name = strtolower($name);
+        $new->headers[$name] = array_merge($new->headers[$name] ?? [], (array)$value);
+        return $new;
     }
 
-    public function withoutHeader(string $name): MessageInterface
+    /**
+     * @param $name
+     * @return $this
+     */
+    public function withoutHeader($name): self
     {
-        // TODO: Implement withoutHeader() method.
+        $new = clone $this;
+        unset($new->headers[strtolower($name)]);
+        return $new;
     }
 
+    /**
+     * @return StreamInterface
+     */
     public function getBody(): StreamInterface
     {
-        // TODO: Implement getBody() method.
+        return $this->body;
     }
 
-    public function withBody(StreamInterface $body): MessageInterface
+    /**
+     * @param StreamInterface $body
+     * @return $this
+     */
+    public function withBody(StreamInterface $body): self
     {
-        // TODO: Implement withBody() method.
+        $new = clone $this;
+        $new->body = $body;
+        return $new;
     }
 
+    /**
+     * @return int
+     */
     public function getStatusCode(): int
     {
-        // TODO: Implement getStatusCode() method.
+        return $this->statusCode;
     }
 
-    public function withStatus(int $code, string $reasonPhrase = ''): ResponseInterface
+    /**
+     * @param $code
+     * @param $reasonPhrase
+     * @return $this
+     */
+    public function withStatus($code, $reasonPhrase = ''): self
     {
-        // TODO: Implement withStatus() method.
+        $new = clone $this;
+        $new->statusCode = $code;
+        $new->reasonPhrase = $reasonPhrase;
+        return $new;
     }
 
+    /**
+     * @return string
+     */
     public function getReasonPhrase(): string
     {
-        // TODO: Implement getReasonPhrase() method.
+        return $this->reasonPhrase;
     }
 }

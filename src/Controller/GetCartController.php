@@ -2,27 +2,37 @@
 
 declare(strict_types = 1);
 
-namespace Raketa\BackendTestTask\Controller;
+namespace App\Controller;
 
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Raketa\BackendTestTask\Repository\CartManager;
-use Raketa\BackendTestTask\View\CartView;
+use App\Repository\CartManager;
+use App\View\CartView;
 
 readonly class GetCartController
 {
+    /**
+     * @param CartView $cartView
+     * @param CartManager $cartManager
+     */
     public function __construct(
         public CartView $cartView,
         public CartManager $cartManager
     ) {
     }
 
+    /**
+     * @param RequestInterface $request
+     * @return ResponseInterface
+     * @throws \Doctrine\DBAL\Exception
+     */
     public function get(RequestInterface $request): ResponseInterface
     {
         $response = new JsonResponse();
-        $cart = $this->cartManager->getCart();
+        $cartUuid = $request->getQueryParams()['cart_uuid'] ?? '';
+        $cart = $this->cartManager->getCart($cartUuid);
 
-        if (! $cart) {
+        if (!$cart) {
             $response->getBody()->write(
                 json_encode(
                     ['message' => 'Cart not found'],
@@ -44,6 +54,6 @@ readonly class GetCartController
 
         return $response
             ->withHeader('Content-Type', 'application/json; charset=utf-8')
-            ->withStatus(404);
+            ->withStatus(200);
     }
 }

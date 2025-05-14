@@ -2,43 +2,96 @@
 
 declare(strict_types = 1);
 
-namespace Raketa\BackendTestTask\Repository;
+namespace App\Repository;
 
+use App\Exception\ProductNotFoundException;
+use App\Repository\Entity\Product;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
-use Raketa\BackendTestTask\Repository\Entity\Product;
 
 class ProductRepository
 {
     private Connection $connection;
 
+    /**
+     * @param Connection $connection
+     */
     public function __construct(Connection $connection)
     {
         $this->connection = $connection;
     }
 
+    /**
+     * @param string $uuid
+     * @return Product
+     * @throws \Doctrine\DBAL\Exception
+     * @throws ProductNotFoundException
+     */
     public function getByUuid(string $uuid): Product
     {
-        $row = $this->connection->fetchOne(
-            "SELECT * FROM products WHERE uuid = " . $uuid,
+        $product = $this->connection->fetchAssociative(
+            "SELECT * FROM products WHERE is_active = 1 AND uuid = :uuid",
+            ['uuid' => $uuid]
         );
 
-        if (empty($row)) {
-            throw new Exception('Product not found');
+        if (empty($product)) {
+            throw new ProductNotFoundException(
+                $uuid,
+                sprintf('Product %s not found or inactive', $uuid)
+            );
         }
 
-        return $this->make($row);
+        return $this->make($product);
     }
 
+    /**
+     * @param string $category
+     * @return array
+     * @throws \Doctrine\DBAL\Exception
+     * @throws ProductNotFoundException
+     */
     public function getByCategory(string $category): array
     {
+        if (empty($category)) {
+            return [];
+        }
+
+        $products = $this->connection->fetchAllAssociative(
+            "SELECT * FROM products WHERE is_active = 1 AND category = :category",
+            ['category' => $category]
+        );
+
         return array_map(
-            static fn (array $row): Product => $this->make($row),
-            $this->connection->fetchAllAssociative(
-                "SELECT id FROM products WHERE is_active = 1 AND category = " . $category,
-            )
+            fn (array $product) => $this->make($product),
+            $products
         );
     }
 
+    /**
+     * @param array $uuids
+     * @return array
+     * @throws \Doctrine\DBAL\Exception
+     * @throws ProductNotFoundException
+     */
+    public function getByUuids(array $uuids): array
+    {
+        if (empty($uuids)) {
+            return [];
+        }
+
+        $products = $this->connection->fetchAllAssociative(
+            "SELECT * FROM products WHERE uuid IN (:uuids)",
+            ['uuids' => $uuids],
+            ['uuids' => ArrayParameterType::STRING]
+        );
+
+        return array_map([$this, 'make'], $products);
+    }
+
+    /**
+     * @param array $row
+     * @return Product
+     */
     public function make(array $row): Product
     {
         return new Product(

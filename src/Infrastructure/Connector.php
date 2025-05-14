@@ -2,9 +2,9 @@
 
 declare(strict_types = 1);
 
-namespace Raketa\BackendTestTask\Infrastructure;
+namespace App\Infrastructure;
 
-use Raketa\BackendTestTask\Domain\Cart;
+use App\Domain\Cart;
 use Redis;
 use RedisException;
 
@@ -12,32 +12,40 @@ class Connector
 {
     private Redis $redis;
 
+    /**
+     * @param $redis
+     */
     public function __construct($redis)
     {
-        return $this->redis = $redis;
+        $this->redis = $redis;
     }
 
     /**
+     * @param string $key
+     * @return Cart|null
      * @throws ConnectorException
      */
-    public function get(Cart $key)
+    public function get(string $key): ?Cart
     {
         try {
             return unserialize($this->redis->get($key));
-        } catch (RedisException $e) {
-            throw new ConnectorException('Connector error', $e->getCode(), $e);
+        } catch (RedisException $exception) {
+            throw new ConnectorException('Connector error', $exception->getCode(), $exception);
         }
     }
 
     /**
+     * @param string $key
+     * @param Cart $value
+     * @return void
      * @throws ConnectorException
      */
-    public function set(string $key, Cart $value)
+    public function set(string $key, Cart $value): void
     {
         try {
             $this->redis->setex($key, 24 * 60 * 60, serialize($value));
-        } catch (RedisException $e) {
-            throw new ConnectorException('Connector error', $e->getCode(), $e);
+        } catch (RedisException $exception) {
+            throw new ConnectorException('Connector error', $exception->getCode(), $exception);
         }
     }
 

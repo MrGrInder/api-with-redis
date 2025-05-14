@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace Raketa\BackendTestTask\Infrastructure;
+namespace App\Infrastructure;
 
 use Redis;
 use RedisException;
@@ -12,37 +12,61 @@ class ConnectorFacade
     public string $host;
     public int $port = 6379;
     public ?string $password = null;
-    public ?int $dbindex = null;
+    public ?int $dbIndex = null;
+    public Connector $connector;
 
-    public $connector;
-
-    public function __construct($host, $port, $password, $dbindex)
+    /**
+     * @param $host
+     * @param $port
+     * @param $password
+     * @param $dbIndex
+     * @throws ConnectorException
+     */
+    public function __construct($host, $port, $password, $dbIndex)
     {
         $this->host = $host;
         $this->port = $port;
         $this->password = $password;
-        $this->dbindex = $dbindex;
+        $this->dbIndex = $dbIndex;
+        $this->build();
     }
 
+    /**
+     * @return Connector
+     */
+    public function getConnector(): Connector
+    {
+        return $this->connector;
+    }
+
+    /**
+     * @return void
+     * @throws ConnectorException
+     */
     protected function build(): void
     {
         $redis = new Redis();
-
         try {
-            $isConnected = $redis->isConnected();
-            if (! $isConnected && $redis->ping('Pong')) {
-                $isConnected = $redis->connect(
-                    $this->host,
-                    $this->port,
-                );
+            if (!$redis->connect($this->host, $this->port)) {
+                throw new RedisException("Connection failed");
             }
-        } catch (RedisException) {
-        }
 
-        if ($isConnected) {
-            $redis->auth($this->password);
-            $redis->select($this->dbindex);
+            if ($this->password && !$redis->auth($this->password)) {
+                throw new RedisException("Authentication failed");
+            }
+
+            if ($this->dbIndex !== null && !$redis->select($this->dbIndex)) {
+                throw new RedisException("DB selection failed");
+            }
+
             $this->connector = new Connector($redis);
+
+        } catch (RedisException $exception) {
+            throw new ConnectorException(
+                "Redis connection error: " . $exception->getMessage(),
+                $exception->getCode(),
+                $exception
+            );
         }
     }
 }

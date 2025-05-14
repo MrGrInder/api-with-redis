@@ -2,51 +2,26 @@
 
 declare(strict_types = 1);
 
-namespace Raketa\BackendTestTask\Infrastructure;
+namespace App\Infrastructure;
 
-class ConnectorException implements \Throwable
+use Exception;
+use Throwable;
+
+class ConnectorException extends Exception
 {
-    public function __construct(
-        private string $message,
-        private int $code,
-        private ?\Throwable $previous,
-    ) { }
-
-    public function getMessage(): string
+    /**
+     * @param string $message
+     * @param int $code
+     * @param Throwable|null $previous
+     */
+    public function __construct(string $message, int $code = 0, Throwable $previous = null)
     {
-        return $this->message;
+        parent::__construct($message, $code, $previous);
     }
 
-    public function getCode(): int
-    {
-        return $this->code;
-    }
-
-    public function getFile(): string
-    {
-        return $this->previous->getFile();
-    }
-
-    public function getLine(): int
-    {
-        return $this->previous->getLine();
-    }
-
-    public function getTrace(): array
-    {
-        return $this->previous->getTrace();
-    }
-
-    public function getTraceAsString(): string
-    {
-        return $this->previous->getTraceAsString();
-    }
-
-    public function getPrevious(): ?\Throwable
-    {
-        return $this->previous;
-    }
-
+    /**
+     * @return string
+     */
     public function __toString(): string
     {
         return sprintf(
